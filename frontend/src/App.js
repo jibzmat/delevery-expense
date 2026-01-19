@@ -43,21 +43,21 @@ function App() {
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  const updateDebugLog = (payload, fallbackMessage) => {
+  const replaceDebugLog = (payload) => {
     if (payload?.debugLog && Array.isArray(payload.debugLog)) {
       setDebugLog(payload.debugLog);
-      return;
     }
+  };
 
-    if (fallbackMessage) {
-      setDebugLog((prev) => {
-        if (prev.length < DEBUG_LOG_LIMIT) {
-          return [...prev, fallbackMessage];
-        }
-        const trimmed = prev.slice(-(DEBUG_LOG_LIMIT - 1));
-        return [...trimmed, fallbackMessage];
-      });
-    }
+  const appendDebugLog = (fallbackMessage) => {
+    if (!fallbackMessage) return;
+    setDebugLog((prev) => {
+      if (prev.length < DEBUG_LOG_LIMIT) {
+        return [...prev, fallbackMessage];
+      }
+      const trimmed = prev.slice(-(DEBUG_LOG_LIMIT - 1));
+      return [...trimmed, fallbackMessage];
+    });
   };
 
   const handleFileUpload = (event) => {
@@ -175,7 +175,7 @@ function App() {
 
     try {
       const response = await axios.post(`${API_URL}/api/swiggy/login`, { mobileNumber });
-      updateDebugLog(response.data);
+      replaceDebugLog(response.data);
       
       if (response.data.success) {
         setSessionId(response.data.sessionId);
@@ -195,7 +195,8 @@ function App() {
     } catch (err) {
       setError('Login failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
-      updateDebugLog(err.response?.data, `Frontend: login failed - ${err.message}`);
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: login failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ function App() {
         sessionId,
         otp
       });
-      updateDebugLog(response.data);
+      replaceDebugLog(response.data);
 
       if (response.data.success) {
         setLoginStep('scraping');
@@ -229,7 +230,8 @@ function App() {
     } catch (err) {
       setError('OTP verification failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
-      updateDebugLog(err.response?.data, `Frontend: OTP verification failed - ${err.message}`);
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: OTP verification failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -244,7 +246,7 @@ function App() {
       const response = await axios.post(`${API_URL}/api/swiggy/scrape-orders`, {
         sessionId: sid
       });
-      updateDebugLog(response.data);
+      replaceDebugLog(response.data);
 
       if (response.data.success && response.data.orders) {
         setOrders(response.data.orders);
@@ -260,7 +262,8 @@ function App() {
     } catch (err) {
       setError('Scraping failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
-      updateDebugLog(err.response?.data, `Frontend: scraping failed - ${err.message}`);
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: scraping failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -430,8 +433,8 @@ function App() {
                     </button>
                   </div>
                   <ul className="debug-list">
-                    {debugLog.map((line, idx) => (
-                      <li key={idx}>{line}</li>
+                    {debugLog.map((line) => (
+                      <li key={line}>{line}</li>
                     ))}
                   </ul>
                 </div>
