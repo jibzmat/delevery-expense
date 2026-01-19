@@ -196,8 +196,10 @@ async function submitOTP(sessionId, otp) {
 
     // Check if login was successful
     const loginSuccess = await page.evaluate(() => {
-      return !document.body.innerText.includes('Invalid OTP') &&
-              !document.body.innerText.includes('incorrect');
+      return (
+        !document.body.innerText.includes('Invalid OTP') &&
+        !document.body.innerText.includes('incorrect')
+      );
     });
 
     if (!loginSuccess) {
