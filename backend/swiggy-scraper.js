@@ -196,14 +196,21 @@ async function submitOTP(sessionId, otp) {
 
     // Check if login was successful
     const loginSuccess = await page.evaluate(() => {
-      return (
-        !document.body.innerText.includes('Invalid OTP') &&
-        !document.body.innerText.includes('incorrect')
-      );
+      const bodyText = document.body.innerText;
+      const errorNode = document.querySelector('[class*="error"], [data-testid*="error"]');
+      const errorText = errorNode ? errorNode.innerText : '';
+      const hasError =
+        bodyText.includes('Invalid OTP') ||
+        bodyText.includes('incorrect') ||
+        errorText.includes('Invalid');
+      return !hasError;
     });
 
     if (!loginSuccess) {
-      const pagePreview = await page.evaluate(() => document.body.innerText.slice(0, 500));
+      const pagePreview = await page.evaluate(() => {
+        const text = document.body.innerText.slice(0, 200);
+        return text.replace(/\d/g, 'x');
+      });
       addDebug(sessionId, `OTP validation failed. Page preview: ${pagePreview}`);
     }
 

@@ -51,8 +51,11 @@ function App() {
 
     if (fallbackMessage) {
       setDebugLog((prev) => {
-        const next = [...prev, fallbackMessage];
-        return next.slice(-DEBUG_LOG_LIMIT);
+        if (prev.length < DEBUG_LOG_LIMIT) {
+          return [...prev, fallbackMessage];
+        }
+        const trimmed = prev.slice(-(DEBUG_LOG_LIMIT - 1));
+        return [...trimmed, fallbackMessage];
       });
     }
   };
