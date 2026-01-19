@@ -200,6 +200,11 @@ async function submitOTP(sessionId, otp) {
               !document.body.innerText.includes('incorrect');
     });
 
+    if (!loginSuccess) {
+      const pagePreview = await page.evaluate(() => document.body.innerText.slice(0, 500));
+      addDebug(sessionId, `OTP validation failed. Page preview: ${pagePreview}`);
+    }
+
     addDebug(sessionId, `OTP verification result: ${loginSuccess ? 'success' : 'failure'}`);
 
     if (!loginSuccess) {

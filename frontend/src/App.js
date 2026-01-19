@@ -428,7 +428,7 @@ function App() {
                   </div>
                   <ul className="debug-list">
                     {debugLog.map((line, idx) => (
-                      <li key={line || idx}>{line}</li>
+                      <li key={idx}>{line}</li>
                     ))}
                   </ul>
                 </div>
