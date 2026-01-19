@@ -61,13 +61,15 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
     // Wait a bit for the page to load
     await page.waitForTimeout(2000);
 
-    // Check if already logged in
+    // Check if already logged in by looking for a "Sign In" control
     const isLoggedIn = await page.evaluate(() => {
-      return !document.querySelector('[data-testid="login-button"]') && 
-             !document.body.innerText.includes('Sign In');
+      // If a button or link contains "Sign In", assume the user needs to log in
+      const hasSignInControl = Array.from(document.querySelectorAll('button, a'))
+        .some(el => /sign\s*in/i.test((el.textContent || '').trim()));
+      return !hasSignInControl;
     });
 
-    addDebug(sessionId, `Login state detected: ${isLoggedIn ? 'already logged in' : 'needs login'}`);
+    addDebug(sessionId, `Login state detected: ${isLoggedIn ? 'already logged in' : 'needs login (Sign In present)'}`);
 
     if (isLoggedIn) {
       return {
@@ -79,17 +81,21 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
       };
     }
 
-    // Try to find and click login button
-    const loginButton = await page.$('[data-testid="login-button"]').catch(() => null) ||
-                        await page.$('text=Login').catch(() => null) ||
-                        await page.$('button:has-text("Sign In")').catch(() => null);
+    // Try to find and click sign-in/login control (prioritize "Sign In")
+    const loginButton =
+      (await page.$('button:has-text("Sign In")').catch(() => null)) ||
+      (await page.$('a:has-text("Sign In")').catch(() => null)) ||
+      (await page.$('text=Sign In').catch(() => null)) ||
+      (await page.$('[data-testid="login-button"]').catch(() => null)) ||
+      (await page.$('text=Login').catch(() => null)) ||
+      (await page.$('button:has-text("Login")').catch(() => null));
 
     if (loginButton) {
-      addDebug(sessionId, 'Found login button, clicking');
+      addDebug(sessionId, 'Found sign-in/login control, clicking');
       await loginButton.click();
       await page.waitForTimeout(1500);
     } else {
-      addDebug(sessionId, 'Login button not found, continuing to search for inputs');
+      addDebug(sessionId, 'Sign In/Login control not found, continuing to search for inputs');
     }
 
     // Enter mobile number
