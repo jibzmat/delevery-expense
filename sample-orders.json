@@ -1,0 +1,122 @@
+[
+  {
+    "date": "2024-01-15",
+    "amount": 350,
+    "restaurant": "Pizza Place"
+  },
+  {
+    "date": "2024-01-20",
+    "amount": 280,
+    "restaurant": "Burger Joint"
+  },
+  {
+    "date": "2024-02-05",
+    "amount": 420,
+    "restaurant": "Chinese Express"
+  },
+  {
+    "date": "2024-02-14",
+    "amount": 890,
+    "restaurant": "Fine Dining"
+  },
+  {
+    "date": "2024-02-28",
+    "amount": 310,
+    "restaurant": "Taco Stand"
+  },
+  {
+    "date": "2024-03-10",
+    "amount": 450,
+    "restaurant": "Italian Bistro"
+  },
+  {
+    "date": "2024-03-22",
+    "amount": 380,
+    "restaurant": "Sushi Bar"
+  },
+  {
+    "date": "2024-04-05",
+    "amount": 290,
+    "restaurant": "Cafe Corner"
+  },
+  {
+    "date": "2024-04-18",
+    "amount": 510,
+    "restaurant": "BBQ House"
+  },
+  {
+    "date": "2024-05-02",
+    "amount": 340,
+    "restaurant": "Thai Kitchen"
+  },
+  {
+    "date": "2024-05-20",
+    "amount": 460,
+    "restaurant": "Mediterranean Grill"
+  },
+  {
+    "date": "2024-06-08",
+    "amount": 390,
+    "restaurant": "Mexican Cantina"
+  },
+  {
+    "date": "2024-07-12",
+    "amount": 425,
+    "restaurant": "Indian Spice"
+  },
+  {
+    "date": "2024-07-25",
+    "amount": 370,
+    "restaurant": "Korean BBQ"
+  },
+  {
+    "date": "2024-08-03",
+    "amount": 490,
+    "restaurant": "French Cafe"
+  },
+  {
+    "date": "2024-08-19",
+    "amount": 315,
+    "restaurant": "American Diner"
+  },
+  {
+    "date": "2024-09-07",
+    "amount": 540,
+    "restaurant": "Steakhouse"
+  },
+  {
+    "date": "2024-09-22",
+    "amount": 380,
+    "restaurant": "Noodle Bar"
+  },
+  {
+    "date": "2024-10-05",
+    "amount": 410,
+    "restaurant": "Greek Taverna"
+  },
+  {
+    "date": "2024-10-20",
+    "amount": 465,
+    "restaurant": "Seafood Market"
+  },
+  {
+    "date": "2024-11-08",
+    "amount": 335,
+    "restaurant": "Sandwich Shop"
+  },
+  {
+    "date": "2024-11-23",
+    "amount": 520,
+    "restaurant": "Vietnamese Kitchen"
+  },
+  {
+    "date": "2024-12-10",
+    "amount": 395,
+    "restaurant": "Spanish Tapas"
+  },
+  {
+    "date": "2024-12-25",
+    "amount": 780,
+    "restaurant": "Holiday Feast Restaurant"
+  }
+]
