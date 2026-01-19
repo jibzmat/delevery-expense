@@ -31,6 +31,13 @@ function App() {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Swiggy login state
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [sessionId, setSessionId] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loginStep, setLoginStep] = useState('initial'); // initial, otp, scraping
+  const [scrapingStatus, setScrapingStatus] = useState('');
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -135,6 +142,120 @@ function App() {
     setError('');
   };
 
+  // Swiggy login functions
+  const handleSwiggyLogin = async () => {
+    if (!mobileNumber || mobileNumber.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setScrapingStatus('Initiating login...');
+
+    try {
+      const response = await axios.post(`${API_URL}/api/swiggy/login`, { mobileNumber });
+      
+      if (response.data.success) {
+        setSessionId(response.data.sessionId);
+        
+        if (response.data.needsOtp) {
+          setLoginStep('otp');
+          setScrapingStatus('OTP sent to your mobile number. Please enter it below.');
+        } else {
+          // Already logged in, proceed to scraping
+          setLoginStep('scraping');
+          await handleScrapeOrders(response.data.sessionId);
+        }
+      } else {
+        setError(response.data.message || 'Login failed');
+        setScrapingStatus('');
+      }
+    } catch (err) {
+      setError('Login failed: ' + (err.response?.data?.error || err.message));
+      setScrapingStatus('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitOTP = async () => {
+    if (!otp || otp.length < 4) {
+      setError('Please enter a valid OTP');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setScrapingStatus('Verifying OTP...');
+
+    try {
+      const response = await axios.post(`${API_URL}/api/swiggy/submit-otp`, {
+        sessionId,
+        otp
+      });
+
+      if (response.data.success) {
+        setLoginStep('scraping');
+        setScrapingStatus('OTP verified! Scraping your orders...');
+        await handleScrapeOrders(sessionId);
+      } else {
+        setError(response.data.message || 'Invalid OTP');
+        setScrapingStatus('');
+      }
+    } catch (err) {
+      setError('OTP verification failed: ' + (err.response?.data?.error || err.message));
+      setScrapingStatus('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScrapeOrders = async (sid) => {
+    setLoading(true);
+    setError('');
+    setScrapingStatus('Scraping orders from Swiggy... This may take a minute.');
+
+    try {
+      const response = await axios.post(`${API_URL}/api/swiggy/scrape-orders`, {
+        sessionId: sid
+      });
+
+      if (response.data.success && response.data.orders) {
+        setOrders(response.data.orders);
+        setScrapingStatus(`Successfully loaded ${response.data.orders.length} orders!`);
+        setLoginStep('initial');
+        setMobileNumber('');
+        setOtp('');
+        setSessionId('');
+      } else {
+        setError(response.data.message || 'Failed to scrape orders');
+        setScrapingStatus('');
+      }
+    } catch (err) {
+      setError('Scraping failed: ' + (err.response?.data?.error || err.message));
+      setScrapingStatus('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelLogin = async () => {
+    if (sessionId) {
+      try {
+        await axios.post(`${API_URL}/api/swiggy/cancel-session`, { sessionId });
+      } catch (err) {
+        console.error('Error canceling session:', err);
+      }
+    }
+    setLoginStep('initial');
+    setMobileNumber('');
+    setOtp('');
+    setSessionId('');
+    setScrapingStatus('');
+    setError('');
+  };
+
   const getMonthlyChartData = () => {
     if (!analysis?.monthlySpend) return null;
 
@@ -197,12 +318,78 @@ function App() {
 
       <div className="container">
         <section className="input-section">
-          <h2>📊 Upload Your Orders</h2>
+          <h2>📊 Get Your Orders</h2>
           <p className="info-text">
-            Upload your Swiggy order data as JSON. Each order should have: date, amount, and optionally restaurant name.
+            Login to Swiggy to automatically fetch your orders, or upload/paste order data manually.
           </p>
           
           <div className="input-methods">
+            <div className="input-method swiggy-login">
+              <h3>🔐 Login to Swiggy</h3>
+              
+              {loginStep === 'initial' && (
+                <div className="login-form">
+                  <input
+                    type="tel"
+                    placeholder="Enter 10-digit mobile number"
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                    maxLength="10"
+                    className="mobile-input"
+                  />
+                  <button 
+                    onClick={handleSwiggyLogin} 
+                    disabled={loading}
+                    className="btn btn-primary"
+                  >
+                    {loading ? 'Connecting...' : 'Send OTP'}
+                  </button>
+                </div>
+              )}
+
+              {loginStep === 'otp' && (
+                <div className="otp-form">
+                  <input
+                    type="text"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    maxLength="6"
+                    className="otp-input"
+                  />
+                  <div className="otp-buttons">
+                    <button 
+                      onClick={handleSubmitOTP} 
+                      disabled={loading}
+                      className="btn btn-primary"
+                    >
+                      {loading ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                    <button 
+                      onClick={handleCancelLogin}
+                      disabled={loading}
+                      className="btn btn-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {loginStep === 'scraping' && (
+                <div className="scraping-status">
+                  <div className="spinner"></div>
+                  <p>Scraping your orders...</p>
+                </div>
+              )}
+
+              {scrapingStatus && (
+                <div className="status-message">
+                  {scrapingStatus}
+                </div>
+              )}
+            </div>
+
             <div className="input-method">
               <h3>Upload JSON File</h3>
               <input

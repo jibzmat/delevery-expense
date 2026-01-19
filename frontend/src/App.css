@@ -78,7 +78,7 @@ h3 {
 
 .input-methods {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -94,6 +94,90 @@ h3 {
 .input-method:hover {
   border-color: #667eea;
   background: #f0f4ff;
+}
+
+.swiggy-login {
+  border-color: #fc466b;
+  background: linear-gradient(135deg, #fff5f7 0%, #ffe5ea 100%);
+}
+
+.swiggy-login:hover {
+  border-color: #ff6b6b;
+  background: linear-gradient(135deg, #fff0f3 0%, #ffd9e0 100%);
+}
+
+.login-form, .otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-input, .otp-input {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.mobile-input:focus, .otp-input:focus {
+  outline: none;
+  border-color: #fc466b;
+  box-shadow: 0 0 0 3px rgba(252, 70, 107, 0.1);
+}
+
+.otp-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-cancel {
+  padding: 0.875rem 1.5rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  border-color: #999;
+  background: #f5f5f5;
+}
+
+.scraping-status {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #fc466b;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.status-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #e8f5e9;
+  border: 1px solid #81c784;
+  border-radius: 6px;
+  color: #2e7d32;
+  font-weight: 500;
+  text-align: center;
 }
 
 .file-input {

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { initSwiggyLogin, submitOTP, scrapeOrders, cleanupSession } = require('./swiggy-scraper');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +52,77 @@ function calculateSpendInRange(orders, startDate, endDate) {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// Initialize Swiggy login
+app.post('/api/swiggy/login', async (req, res) => {
+  try {
+    const { mobileNumber } = req.body;
+    
+    if (!mobileNumber) {
+      return res.status(400).json({ error: 'Mobile number is required' });
+    }
+
+    // Generate session ID
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const result = await initSwiggyLogin(mobileNumber, sessionId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in Swiggy login:', error);
+    res.status(500).json({ error: 'Login failed', message: error.message });
+  }
+});
+
+// Submit OTP
+app.post('/api/swiggy/submit-otp', async (req, res) => {
+  try {
+    const { sessionId, otp } = req.body;
+    
+    if (!sessionId || !otp) {
+      return res.status(400).json({ error: 'Session ID and OTP are required' });
+    }
+
+    const result = await submitOTP(sessionId, otp);
+    res.json(result);
+  } catch (error) {
+    console.error('Error submitting OTP:', error);
+    res.status(500).json({ error: 'OTP verification failed', message: error.message });
+  }
+});
+
+// Scrape orders from Swiggy
+app.post('/api/swiggy/scrape-orders', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    const result = await scrapeOrders(sessionId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error scraping orders:', error);
+    res.status(500).json({ error: 'Order scraping failed', message: error.message });
+  }
+});
+
+// Cancel/cleanup session
+app.post('/api/swiggy/cancel-session', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+
+    await cleanupSession(sessionId);
+    res.json({ success: true, message: 'Session cleaned up' });
+  } catch (error) {
+    console.error('Error cleaning up session:', error);
+    res.status(500).json({ error: 'Cleanup failed', message: error.message });
+  }
 });
 
 // Analyze orders
