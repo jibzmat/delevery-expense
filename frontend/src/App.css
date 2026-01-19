@@ -180,6 +180,56 @@ h3 {
   text-align: center;
 }
 
+.debug-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f4f6fb;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+}
+
+.debug-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.debug-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.debug-list li {
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.debug-list li:last-child {
+  border-bottom: none;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-text:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .file-input {
   width: 100%;
   padding: 0.75rem;
