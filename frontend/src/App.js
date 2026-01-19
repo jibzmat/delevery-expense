@@ -144,7 +144,7 @@ function App() {
 
   // Swiggy login functions
   const handleSwiggyLogin = async () => {
-    if (!mobileNumber || mobileNumber.length !== 10) {
+    if (!mobileNumber || mobileNumber.length !== 10 || !/^\d{10}$/.test(mobileNumber)) {
       setError('Please enter a valid 10-digit mobile number');
       return;
     }

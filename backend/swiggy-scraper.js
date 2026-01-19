@@ -4,6 +4,12 @@ const playwright = require('playwright-core');
 const sessions = new Map();
 
 /**
+ * NOTE: This scraper relies on Swiggy's current DOM structure and may break if Swiggy updates their UI.
+ * The selectors used are best-effort attempts to find elements and may need updates over time.
+ * Consider this a proof-of-concept implementation that demonstrates the automated login flow.
+ */
+
+/**
  * Initialize Swiggy login and wait for OTP
  * @param {string} mobileNumber - User's mobile number
  * @param {string} sessionId - Unique session identifier
