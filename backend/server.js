@@ -1,10 +1,28 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
 const { initSwiggyLogin, submitOTP, scrapeOrders, cleanupSession } = require('./swiggy-scraper');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Rate limiting for login endpoints to prevent abuse
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login requests per windowMs
+  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 OTP attempts per windowMs
+  message: 'Too many OTP attempts from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Middleware
 app.use(cors());
@@ -55,7 +73,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Initialize Swiggy login
-app.post('/api/swiggy/login', async (req, res) => {
+app.post('/api/swiggy/login', loginLimiter, async (req, res) => {
   try {
     const { mobileNumber } = req.body;
     
@@ -75,7 +93,7 @@ app.post('/api/swiggy/login', async (req, res) => {
 });
 
 // Submit OTP
-app.post('/api/swiggy/submit-otp', async (req, res) => {
+app.post('/api/swiggy/submit-otp', otpLimiter, async (req, res) => {
   try {
     const { sessionId, otp } = req.body;
     
