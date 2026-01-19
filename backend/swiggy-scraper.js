@@ -2,6 +2,7 @@ const playwright = require('playwright-core');
 
 // Store active browser sessions
 const sessions = new Map();
+const DEBUG_LOG_LIMIT = 50;
 
 function addDebug(sessionId, message) {
   const session = sessions.get(sessionId);
@@ -9,7 +10,7 @@ function addDebug(sessionId, message) {
   const entry = `[${new Date().toISOString()}] ${message}`;
   session.debugLog = session.debugLog || [];
   session.debugLog.push(entry);
-  if (session.debugLog.length > 50) {
+  if (session.debugLog.length > DEBUG_LOG_LIMIT) {
     session.debugLog.shift();
   }
 }

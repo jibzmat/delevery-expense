@@ -24,6 +24,7 @@ ChartJS.register(
 );
 
 function App() {
+  const DEBUG_LOG_LIMIT = 50;
   const [orders, setOrders] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [rangeAnalysis, setRangeAnalysis] = useState(null);
@@ -51,7 +52,7 @@ function App() {
     if (fallbackMessage) {
       setDebugLog((prev) => {
         const next = [...prev, fallbackMessage];
-        return next.slice(-50);
+        return next.slice(-DEBUG_LOG_LIMIT);
       });
     }
   };
@@ -427,7 +428,7 @@ function App() {
                   </div>
                   <ul className="debug-list">
                     {debugLog.map((line, idx) => (
-                      <li key={idx}>{line}</li>
+                      <li key={line || idx}>{line}</li>
                     ))}
                   </ul>
                 </div>
