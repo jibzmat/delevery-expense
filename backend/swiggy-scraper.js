@@ -3,7 +3,6 @@ const playwright = require('playwright-core');
 // Store active browser sessions
 const sessions = new Map();
 const DEBUG_LOG_LIMIT = 50;
-const DEBUG_PREVIEW_ENABLED = process.env.DEBUG_PREVIEW_ENABLED === 'true';
 
 function addDebug(sessionId, message) {
   const session = sessions.get(sessionId);
@@ -208,15 +207,7 @@ async function submitOTP(sessionId, otp) {
     });
 
     if (!loginSuccess) {
-      if (DEBUG_PREVIEW_ENABLED) {
-        const pagePreview = await page.evaluate(() => {
-          const text = document.body.innerText.slice(0, 200);
-          return text.replace(/[A-Za-z0-9]/g, 'x');
-        });
-        addDebug(sessionId, `OTP validation failed. Page preview: ${pagePreview}`);
-      } else {
-        addDebug(sessionId, 'OTP validation failed. Enable DEBUG_PREVIEW_ENABLED to capture page preview.');
-      }
+      addDebug(sessionId, 'OTP validation failed. Page preview logging is disabled for privacy.');
     }
 
     addDebug(sessionId, `OTP verification result: ${loginSuccess ? 'success' : 'failure'}`);
