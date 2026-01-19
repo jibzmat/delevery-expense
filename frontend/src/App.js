@@ -24,6 +24,7 @@ ChartJS.register(
 );
 
 function App() {
+  const DEBUG_LOG_LIMIT = 50;
   const [orders, setOrders] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [rangeAnalysis, setRangeAnalysis] = useState(null);
@@ -38,8 +39,26 @@ function App() {
   const [otp, setOtp] = useState('');
   const [loginStep, setLoginStep] = useState('initial'); // initial, otp, scraping
   const [scrapingStatus, setScrapingStatus] = useState('');
+  const [debugLog, setDebugLog] = useState([]);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  const replaceDebugLog = (payload) => {
+    if (payload?.debugLog && Array.isArray(payload.debugLog)) {
+      setDebugLog(payload.debugLog);
+    }
+  };
+
+  const appendDebugLog = (fallbackMessage) => {
+    if (!fallbackMessage) return;
+    setDebugLog((prev) => {
+      if (prev.length < DEBUG_LOG_LIMIT) {
+        return [...prev, fallbackMessage];
+      }
+      const trimmed = prev.slice(-(DEBUG_LOG_LIMIT - 1));
+      return [...trimmed, fallbackMessage];
+    });
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -152,9 +171,11 @@ function App() {
     setLoading(true);
     setError('');
     setScrapingStatus('Initiating login...');
+    setDebugLog([]);
 
     try {
       const response = await axios.post(`${API_URL}/api/swiggy/login`, { mobileNumber });
+      replaceDebugLog(response.data);
       
       if (response.data.success) {
         setSessionId(response.data.sessionId);
@@ -174,6 +195,8 @@ function App() {
     } catch (err) {
       setError('Login failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: login failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -194,6 +217,7 @@ function App() {
         sessionId,
         otp
       });
+      replaceDebugLog(response.data);
 
       if (response.data.success) {
         setLoginStep('scraping');
@@ -206,6 +230,8 @@ function App() {
     } catch (err) {
       setError('OTP verification failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: OTP verification failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -220,6 +246,7 @@ function App() {
       const response = await axios.post(`${API_URL}/api/swiggy/scrape-orders`, {
         sessionId: sid
       });
+      replaceDebugLog(response.data);
 
       if (response.data.success && response.data.orders) {
         setOrders(response.data.orders);
@@ -235,6 +262,8 @@ function App() {
     } catch (err) {
       setError('Scraping failed: ' + (err.response?.data?.error || err.message));
       setScrapingStatus('');
+      replaceDebugLog(err.response?.data);
+      appendDebugLog(`Frontend: scraping failed - ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -254,6 +283,7 @@ function App() {
     setSessionId('');
     setScrapingStatus('');
     setError('');
+    setDebugLog([]);
   };
 
   const getMonthlyChartData = () => {
@@ -386,6 +416,27 @@ function App() {
               {scrapingStatus && (
                 <div className="status-message">
                   {scrapingStatus}
+                </div>
+              )}
+
+              {debugLog.length > 0 && (
+                <div className="debug-panel">
+                  <div className="debug-panel__header">
+                    <span>Debug info</span>
+                    <button
+                      type="button"
+                      className="btn-text"
+                      onClick={() => setDebugLog([])}
+                      disabled={loading}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <ul className="debug-list">
+                    {debugLog.map((line, idx) => (
+                      <li key={`${idx}-${line}`}>{line}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

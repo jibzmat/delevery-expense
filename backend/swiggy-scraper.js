@@ -2,6 +2,23 @@ const playwright = require('playwright-core');
 
 // Store active browser sessions
 const sessions = new Map();
+const DEBUG_LOG_LIMIT = 50;
+
+function addDebug(sessionId, message) {
+  const session = sessions.get(sessionId);
+  if (!session) return;
+  const entry = `[${new Date().toISOString()}] ${message}`;
+  session.debugLog = session.debugLog || [];
+  session.debugLog.push(entry);
+  if (session.debugLog.length > DEBUG_LOG_LIMIT) {
+    session.debugLog.shift();
+  }
+}
+
+function getDebugLog(sessionId) {
+  const session = sessions.get(sessionId);
+  return session?.debugLog ? [...session.debugLog] : [];
+}
 
 /**
  * NOTE: This scraper relies on Swiggy's current DOM structure and may break if Swiggy updates their UI.
@@ -30,13 +47,16 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
     const page = await context.newPage();
 
     // Store session
-    sessions.set(sessionId, { browser, context, page, mobileNumber });
+    sessions.set(sessionId, { browser, context, page, mobileNumber, debugLog: [] });
+    addDebug(sessionId, 'Browser launched in headless mode');
+    addDebug(sessionId, `Session ${sessionId} created for ${mobileNumber}`);
 
     // Navigate to Swiggy orders page
     await page.goto('https://www.swiggy.com/my-account/orders', { 
       waitUntil: 'networkidle',
       timeout: 30000 
     });
+    addDebug(sessionId, `Navigated to ${page.url()}`);
 
     // Wait a bit for the page to load
     await page.waitForTimeout(2000);
@@ -47,12 +67,15 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
              !document.body.innerText.includes('Login');
     });
 
+    addDebug(sessionId, `Login state detected: ${isLoggedIn ? 'already logged in' : 'needs login'}`);
+
     if (isLoggedIn) {
       return {
         success: true,
         message: 'Already logged in',
         sessionId,
-        needsOtp: false
+        needsOtp: false,
+        debugLog: getDebugLog(sessionId)
       };
     }
 
@@ -62,8 +85,11 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
                         await page.$('button:has-text("Login")').catch(() => null);
 
     if (loginButton) {
+      addDebug(sessionId, 'Found login button, clicking');
       await loginButton.click();
       await page.waitForTimeout(1500);
+    } else {
+      addDebug(sessionId, 'Login button not found, continuing to search for inputs');
     }
 
     // Enter mobile number
@@ -73,9 +99,11 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
                         await page.$('input[name="mobile"]').catch(() => null);
 
     if (!mobileInput) {
+      addDebug(sessionId, 'Could not locate mobile number input on page');
       throw new Error('Could not find mobile number input field');
     }
 
+    addDebug(sessionId, 'Filling mobile number into input');
     await mobileInput.fill(mobileNumber);
     await page.waitForTimeout(500);
 
@@ -85,19 +113,25 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
                            await page.$('button[type="submit"]').catch(() => null);
 
     if (continueButton) {
+      addDebug(sessionId, 'Clicking button to request OTP');
       await continueButton.click();
       await page.waitForTimeout(2000);
+    } else {
+      addDebug(sessionId, 'Continue/Send OTP button not found after entering mobile');
     }
 
     return {
       success: true,
       message: 'OTP sent to mobile number. Please submit OTP using /api/submit-otp endpoint',
       sessionId,
-      needsOtp: true
+      needsOtp: true,
+      debugLog: getDebugLog(sessionId)
     };
 
   } catch (error) {
     // Clean up session on error
+    addDebug(sessionId, `Login error: ${error.message}`);
+    const debugLog = getDebugLog(sessionId);
     const session = sessions.get(sessionId);
     if (session) {
       await session.browser.close().catch(() => {});
@@ -107,7 +141,8 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
     return {
       success: false,
       message: `Login failed: ${error.message}`,
-      error: error.message
+      error: error.message,
+      debugLog
     };
   }
 }
@@ -124,11 +159,13 @@ async function submitOTP(sessionId, otp) {
     if (!session) {
       return {
         success: false,
-        message: 'Session not found or expired'
+        message: 'Session not found or expired',
+        debugLog: []
       };
     }
 
     const { page } = session;
+    addDebug(sessionId, `Submitting OTP for session ${sessionId}`);
 
     // Find OTP input field
     const otpInput = await page.$('input[type="text"]').catch(() => null) ||
@@ -136,9 +173,11 @@ async function submitOTP(sessionId, otp) {
                      await page.$('input[name="otp"]').catch(() => null);
 
     if (!otpInput) {
+      addDebug(sessionId, 'Could not locate OTP input on page');
       throw new Error('Could not find OTP input field');
     }
 
+    addDebug(sessionId, 'Filling OTP into input');
     await otpInput.fill(otp);
     await page.waitForTimeout(500);
 
@@ -148,33 +187,51 @@ async function submitOTP(sessionId, otp) {
                          await page.$('button[type="submit"]').catch(() => null);
 
     if (verifyButton) {
+      addDebug(sessionId, 'Clicking verify button for OTP');
       await verifyButton.click();
       await page.waitForTimeout(3000);
+    } else {
+      addDebug(sessionId, 'Verify button not found after entering OTP');
     }
 
     // Check if login was successful
     const loginSuccess = await page.evaluate(() => {
-      return !document.body.innerText.includes('Invalid OTP') &&
-             !document.body.innerText.includes('incorrect');
+      const bodyText = document.body.innerText;
+      const errorNode = document.querySelector('[class*="error"], [data-testid*="error"]');
+      const errorText = errorNode ? errorNode.innerText : '';
+      const hasError =
+        bodyText.includes('Invalid OTP') ||
+        bodyText.includes('incorrect') ||
+        errorText.includes('Invalid');
+      return !hasError;
     });
+
+    if (!loginSuccess) {
+      addDebug(sessionId, 'OTP validation failed. Page preview logging is disabled for privacy.');
+    }
+
+    addDebug(sessionId, `OTP verification result: ${loginSuccess ? 'success' : 'failure'}`);
 
     if (!loginSuccess) {
       return {
         success: false,
-        message: 'Invalid OTP. Please try again.'
+        message: 'Invalid OTP. Please try again.',
+        debugLog: getDebugLog(sessionId)
       };
     }
 
     return {
       success: true,
-      message: 'Login successful! You can now scrape orders.'
+      message: 'Login successful! You can now scrape orders.',
+      debugLog: getDebugLog(sessionId)
     };
 
   } catch (error) {
     return {
       success: false,
       message: `OTP verification failed: ${error.message}`,
-      error: error.message
+      error: error.message,
+      debugLog: getDebugLog(sessionId)
     };
   }
 }
@@ -190,7 +247,8 @@ async function scrapeOrders(sessionId) {
     if (!session) {
       return {
         success: false,
-        message: 'Session not found or expired. Please login first.'
+        message: 'Session not found or expired. Please login first.',
+        debugLog: []
       };
     }
 
@@ -204,6 +262,7 @@ async function scrapeOrders(sessionId) {
         timeout: 30000
       });
     }
+    addDebug(sessionId, `Arrived at URL: ${page.url()}`);
 
     await page.waitForTimeout(3000);
 
@@ -212,6 +271,7 @@ async function scrapeOrders(sessionId) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(1500);
     }
+    addDebug(sessionId, 'Completed scrolling to load orders');
 
     // Extract order data
     const orders = await page.evaluate(() => {
@@ -253,6 +313,9 @@ async function scrapeOrders(sessionId) {
       return extractedOrders;
     });
 
+    addDebug(sessionId, `Order elements extracted: ${orders.length}`);
+
+    const debugLog = getDebugLog(sessionId);
     // Clean up session after successful scrape
     await session.browser.close().catch(() => {});
     sessions.delete(sessionId);
@@ -261,18 +324,22 @@ async function scrapeOrders(sessionId) {
       return {
         success: false,
         message: 'No orders found. Please make sure you have orders in your Swiggy account.',
-        orders: []
+        orders: [],
+        debugLog
       };
     }
 
     return {
       success: true,
       message: `Successfully scraped ${orders.length} orders`,
-      orders
+      orders,
+      debugLog
     };
 
   } catch (error) {
     // Clean up session on error
+    addDebug(sessionId, `Scraping error: ${error.message}`);
+    const debugLog = getDebugLog(sessionId);
     const session = sessions.get(sessionId);
     if (session) {
       await session.browser.close().catch(() => {});
@@ -283,7 +350,8 @@ async function scrapeOrders(sessionId) {
       success: false,
       message: `Scraping failed: ${error.message}`,
       error: error.message,
-      orders: []
+      orders: [],
+      debugLog
     };
   }
 }
