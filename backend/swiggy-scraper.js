@@ -64,7 +64,7 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
     // Check if already logged in
     const isLoggedIn = await page.evaluate(() => {
       return !document.querySelector('[data-testid="login-button"]') && 
-             !document.body.innerText.includes('Login');
+             !document.body.innerText.includes('Sign In');
     });
 
     addDebug(sessionId, `Login state detected: ${isLoggedIn ? 'already logged in' : 'needs login'}`);
@@ -82,7 +82,7 @@ async function initSwiggyLogin(mobileNumber, sessionId) {
     // Try to find and click login button
     const loginButton = await page.$('[data-testid="login-button"]').catch(() => null) ||
                         await page.$('text=Login').catch(() => null) ||
-                        await page.$('button:has-text("Login")').catch(() => null);
+                        await page.$('button:has-text("Sign In")').catch(() => null);
 
     if (loginButton) {
       addDebug(sessionId, 'Found login button, clicking');
